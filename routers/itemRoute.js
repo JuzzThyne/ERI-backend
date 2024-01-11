@@ -36,14 +36,37 @@ const verifyToken = (req, res, next) => {
 };
 
 // routes for add items
-router.post('/' ,verifyToken, async (req, res) => {
-    try{
+router.post('/', verifyToken, async (req, res) => {
+    try {
+        const item = req.body;
 
-    }catch(error){
+        const existingItem = await Item.findOne({
+            itemName: item.itemName,
+        });
+
+        if (existingItem) {
+            res.status(400).send({ message: 'Item already exists!' });
+            return;
+        }
+
+        // Ensure two decimal places, even if none provided
+        const formattedPrice = Number(parseFloat(item.itemPrice).toFixed(2));
+
+        const newItem = {
+            itemPhotoUrl: item.itemPhotoUrl,
+            itemName: item.itemName,
+            itemPrice: formattedPrice, // Use the formatted price
+        };
+
+        await Item.create(newItem);
+        res.status(201).json({ message: 'Item added successfully!' });
+    } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Internal Server Errors" });
+        res.status(500).json({ message: 'Internal Server Error' });
     }
 });
+
+
 
 
 export default router;
