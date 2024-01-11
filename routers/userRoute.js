@@ -35,7 +35,6 @@ const verifyToken = (req, res, next) => {
     }
 };
 
-
 // routes for login
 router.post('/login', async (req, res) => {
     try{
@@ -104,7 +103,7 @@ router.post('/add', async (req, res) => {
     }
 });
 
-router.post('/logout', (req, res) => {
+router.post('/logout', verifyToken, (req, res) => {
     // Destroy the session
     res.json({ success: true, message: "Logout successful" });
 });
