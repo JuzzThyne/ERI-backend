@@ -35,6 +35,7 @@ const verifyToken = (req, res, next) => {
     }
 };
 
+
 // routes for login
 router.post('/login', async (req, res) => {
     try{
@@ -109,7 +110,6 @@ router.post('/logout', (req, res) => {
 });
 
 router.get('/', verifyToken, async(req, res) => {
-    
     // Destroy the session
     const activeAdmin = req.user._id;
 
@@ -121,7 +121,6 @@ router.get('/', verifyToken, async(req, res) => {
         adminId: user._id,
         adminName: user.adminName,
     };
-
     res.json({ message: "successful", adminInfo: filteredUserInfo });
 });
 
