@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import userRoutes from './routers/userRoute.js';
+import itemRoutes from './routers/itemRoute.js';
 
 dotenv.config();
 
@@ -13,6 +14,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/user', userRoutes);
+app.use('/item', itemRoutes);
 
 // connect database
 mongoose.connect(process.env.DATABASE, {

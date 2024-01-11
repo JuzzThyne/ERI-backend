@@ -13,7 +13,7 @@ const itemSchema = mongoose.Schema(
             unique: true,
         },
         itemPrice:{
-            type: Double,
+            type: Number,
             required: true,
         },
     },
