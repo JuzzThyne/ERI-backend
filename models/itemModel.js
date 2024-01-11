@@ -15,6 +15,7 @@ const itemSchema = mongoose.Schema(
         itemPrice:{
             type: Number,
             required: true,
+            set: (price) => parseFloat(price).toFixed(2),
         },
     },
     {
