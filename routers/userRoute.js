@@ -11,6 +11,21 @@ const router = express.Router();
 // parsing the body
 router.use(express.json());
 
+router.use((req, res, next) => {
+    // Get user-agent from headers
+    const userAgent = req.headers['user-agent'];
+  
+    // Extract operating system information from user-agent
+    const osMatch = userAgent.match(/\(([^)]+)\)/);
+  
+    // Check if there is a match before accessing the result
+    const os = osMatch ? osMatch[1] : 'Unknown OS';
+  
+    // Set the operating system information in the request object
+    req.os = os;
+
+    next();
+  });
 
 // Middleware for token verification
 const verifyToken = (req, res, next) => {
@@ -61,7 +76,7 @@ router.post('/login', async (req, res) => {
 
             // Create a new session with random id
             const token = jwt.sign({ adminId: user._id }, process.env.SECRET_KEY, { expiresIn: '24h' });
-            
+            console.log(req.os);
             return res.json({ success: true, message: "Login successful", token });
         } else {
             // If passwords do not match, return an error
