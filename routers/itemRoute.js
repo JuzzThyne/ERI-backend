@@ -19,7 +19,6 @@ cloudinary.config({
 // parsing the body
 router.use(express.json());
 
-
 // Middleware for token verification
 const verifyToken = (req, res, next) => {
     const authorizationHeader = req.headers.authorization;
@@ -68,7 +67,6 @@ router.post('/', verifyToken, async(req , res) => {
         .limit(limit)
         .sort(sortOption); // Sort by itemName
   
-
       // Map the items array to create an array of filtered items
         const filteredItems = items.map(item => ({
             itemId: item._id,
@@ -136,7 +134,6 @@ router.post('/add', upload.single('image'), verifyToken, async (req, res) => {
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
-
 
 // Route for fetching a single item
 router.get('/:itemId', verifyToken, async (req, res) => {
@@ -211,11 +208,6 @@ router.delete('/:itemId', verifyToken, async (req, res) => {
         res.status(500).send({ message: error.message });
     }
 });
-
-
-
-
-
 
 export default router;
 
