@@ -3,10 +3,18 @@ import { Item } from "../models/itemModel.js";
 import bcrypt from "bcrypt";
 import jwt from 'jsonwebtoken';
 import dotenv from "dotenv";
+import {v2 as cloudinary} from 'cloudinary';
+import multer from 'multer';
 
 dotenv.config();
 
 const router = express.Router();
+
+cloudinary.config({ 
+    cloud_name: process.env.CLOUDINARY_NAME, 
+    api_key: process.env.CLOUDINARY_KEY, 
+    api_secret: process.env.CLOUDINARY_SECRET
+  });
 
 // parsing the body
 router.use(express.json());
@@ -82,37 +90,53 @@ router.post('/', verifyToken, async(req , res) => {
     }
 });
 
-
+const upload = multer({ dest: 'uploads/' });
 // routes for add items
-router.post('/add', verifyToken, async (req, res) => {
+router.post('/add', upload.single('image'), verifyToken, async (req, res) => {
     try {
         const item = req.body;
 
-        const existingItem = await Item.findOne({
-            itemName: item.itemName,
+        // Upload image to Cloudinary with unique filename option
+        cloudinary.uploader.upload(req.file.path, { unique_filename: true }, async (error, result) => {
+            if (error) {
+                if (error.http_code === 400 && error.message.includes('already exists')) {
+                    // Handle the case where the same file is found
+                    return res.status(409).json({ message: 'File with the same name already exists' });
+                } else {
+                    // Handle other Cloudinary upload errors
+                    return res.status(500).json({ message: 'Failed to upload image to Cloudinary' });
+                }
+            }
+            try {
+                // Update the itemPhotoUrl in the newItem object
+                const newItem = {
+                    itemPhotoUrl: result.secure_url, // Use the Cloudinary URL
+                    itemName: item.itemName,
+                    itemPrice: Number(parseFloat(item.itemPrice).toFixed(2)),
+                };
+
+                const existingItem = await Item.findOne({
+                    itemName: item.itemName,
+                });
+
+                if (existingItem) {
+                    res.status(400).send({ message: 'Item already exists!', success: false });
+                    return;
+                }
+
+                await Item.create(newItem);
+                res.status(201).json({ message: 'Item added successfully!', success: true });
+            } catch (error) {
+                console.error(error);
+                res.status(500).json({ message: 'Internal Server Error' });
+            }
         });
-
-        if (existingItem) {
-            res.status(400).send({ message: 'Item already exists!' , success: false });
-            return;
-        }
-
-        // Ensure two decimal places, even if none provided
-        const formattedPrice = Number(parseFloat(item.itemPrice).toFixed(2));
-
-        const newItem = {
-            itemPhotoUrl: item.itemPhotoUrl,
-            itemName: item.itemName,
-            itemPrice: formattedPrice, // Use the formatted price
-        };
-
-        await Item.create(newItem);
-        res.status(201).json({ message: 'Item added successfully!' , success: true });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
+
 
 // Route for fetching a single item
 router.get('/:itemId', verifyToken, async (req, res) => {
