@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import jwt from 'jsonwebtoken';
 import dotenv from "dotenv";
 import {v2 as cloudinary} from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import multer from 'multer';
 
 dotenv.config();
@@ -16,6 +17,14 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_SECRET
   });
 
+  // Configure Multer with Cloudinary storage
+const storage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+      folder: 'your-upload-folder', // Specify your desired upload folder
+      format: async (req, file) => 'png', // Set the format of your uploaded files
+    },
+});
 // parsing the body
 router.use(express.json());
 
@@ -88,7 +97,8 @@ router.post('/', verifyToken, async(req , res) => {
     }
 });
 
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ storage });
+
 // routes for add items
 router.post('/add', upload.single('image'), verifyToken, async (req, res) => {
     try {
