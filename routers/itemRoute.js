@@ -54,12 +54,12 @@ const verifyToken = (req, res, next) => {
 // routes for fetching all items
 router.post('/', verifyToken, async(req , res) => {
     try{
-        const { searchterm, page = 1, limit = 10, sortOrder = 'asc'} = req.body;
+        const { searchTerm, page = 1, limit = 10, sortOrder = 'asc'} = req.body;
 
-        const query = searchterm
+        const query = searchTerm
         ? {
             $or: [
-                {itemName: { $regex: new RegExp(searchterm, 'i')}},
+                {itemName: { $regex: new RegExp(searchTerm, 'i')}},
             ],
           }
         : {};
@@ -138,7 +138,7 @@ router.post('/add', upload.array('images', 5), verifyToken, async (req, res) => 
         if (uploadedImageUrls.length === 0) {
             return res.status(500).json({ message: 'No images uploaded', success: false });
         }
-
+        
         const newItems = items.map((item, index) => ({
             itemPhotoUrls: uploadedImageUrls, // Save all uploaded image URLs in the array
             itemName: item.itemName,
