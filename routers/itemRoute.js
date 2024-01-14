@@ -21,7 +21,7 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
     cloudinary,
     params: {
-      folder: 'your-upload-folder', // Specify your desired upload folder
+      folder: 'ERI', // Specify your desired upload folder
       format: async (req, file) => 'png', // Set the format of your uploaded files
     },
 });
@@ -79,7 +79,7 @@ router.post('/', verifyToken, async(req , res) => {
       // Map the items array to create an array of filtered items
         const filteredItems = items.map(item => ({
             itemId: item._id,
-            itemPhotoUrl: item.itemPhotoUrl,
+            itemPhotoUrl: item.itemPhotoUrls,
             itemName: item.itemName,
             itemPrice: item.itemPrice,
         }));
@@ -100,45 +100,62 @@ router.post('/', verifyToken, async(req , res) => {
 const upload = multer({ storage });
 
 // routes for add items
-router.post('/add', upload.single('image'), verifyToken, async (req, res) => {
+router.post('/add', upload.array('images', 5), verifyToken, async (req, res) => {
     try {
-        const item = req.body;
+        let items = req.body;
 
-        // Upload image to Cloudinary with unique filename option
-        cloudinary.uploader.upload(req.file.path, { unique_filename: true }, async (error, result) => {
-            if (error) {
-                if (error.http_code === 400 && error.message.includes('already exists')) {
-                    // Handle the case where the same file is found
-                    return res.status(409).json({ message: 'File with the same name already exists' });
-                } else {
-                    // Handle other Cloudinary upload errors
-                    return res.status(500).json({ message: 'Failed to upload image to Cloudinary' });
-                }
-            }
-            try {
-                // Update the itemPhotoUrl in the newItem object
-                const newItem = {
-                    itemPhotoUrl: result.secure_url, // Use the Cloudinary URL
-                    itemName: item.itemName,
-                    itemPrice: Number(parseFloat(item.itemPrice).toFixed(2)),
-                };
+        // Ensure items is an array
+        if (!Array.isArray(items)) {
+            // Convert the single item into an array with a single element
+            items = [items];
+        }
 
-                const existingItem = await Item.findOne({
-                    itemName: item.itemName,
+        // If only one file is uploaded, req.files will be an array with a single element
+        const files = req.files || [req.file];
+
+        const uploadPromises = files.map(file => {
+            return new Promise((resolve, reject) => {
+                // Upload image to Cloudinary with unique filename option
+                cloudinary.uploader.upload(file.path, { unique_filename: true }, (error, result) => {
+                    if (error) {
+                        if (error.http_code === 400 && error.message.includes('already exists')) {
+                            // Handle the case where the same file is found
+                            reject({ message: 'File with the same name already exists' });
+                        } else {
+                            // Handle other Cloudinary upload errors
+                            reject({ message: 'Failed to upload image to Cloudinary' });
+                        }
+                    } else {
+                        resolve(result.secure_url);
+                    }
                 });
-
-                if (existingItem) {
-                    res.status(400).send({ message: 'Item already exists!', success: false });
-                    return;
-                }
-
-                await Item.create(newItem);
-                res.status(201).json({ message: 'Item added successfully!', success: true });
-            } catch (error) {
-                console.error(error);
-                res.status(500).json({ message: 'Internal Server Error' });
-            }
+            });
         });
+
+        const uploadedImageUrls = await Promise.all(uploadPromises);
+
+        // Check if the array is not empty
+        if (uploadedImageUrls.length === 0) {
+            return res.status(500).json({ message: 'No images uploaded', success: false });
+        }
+
+        const newItems = items.map((item, index) => ({
+            itemPhotoUrls: uploadedImageUrls, // Save all uploaded image URLs in the array
+            itemName: item.itemName,
+            itemPrice: Number(parseFloat(item.itemPrice).toFixed(2)),
+        }));
+
+        const existingItems = await Item.find({
+            itemName: { $in: newItems.map(item => item.itemName) },
+        });
+
+        if (existingItems.length > 0) {
+            res.status(400).json({ message: 'One or more items already exist!', success: false });
+            return;
+        }
+
+        await Item.create(newItems);
+        res.status(201).json({ message: 'Items added successfully!', success: true });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Internal Server Error' });
@@ -163,7 +180,7 @@ router.get('/:itemId', verifyToken, async (req, res) => {
 
         // Create a new object with limited data
         const limitedItemData = {
-            itemPhotoUrl: item.itemPhotoUrl,
+            itemPhotoUrl: item.itemPhotoUrls,
             itemName: item.itemName,
             itemPrice: item.itemPrice,   
         };
@@ -183,7 +200,7 @@ router.put('/:itemId', verifyToken, async (req, res) => {
         const checkItem = await Item.findById(itemId);
 
         const updatedItem = {
-            itemPhotoUrl: req.body.itemPhotoUrl || checkItem.itemPhotoUrl,
+            itemPhotoUrl: req.body.itemPhotoUrl || checkItem.itemPhotoUrls,
             itemName: req.body.itemName || checkItem.itemName,
             itemPrice: req.body.itemPrice || checkItem.itemPrice,
         };

@@ -1,18 +1,19 @@
-import { Double } from "mongodb";
-import mongoose from "mongoose";
+// itemModel.js
+
+import mongoose from 'mongoose';
 
 const itemSchema = mongoose.Schema(
     {
-        itemPhotoUrl:{
+        itemPhotoUrls: [{
             type: String,
             required: true,
-        },
-        itemName:{
+        }],
+        itemName: {
             type: String,
             required: true,
             unique: true,
         },
-        itemPrice:{
+        itemPrice: {
             type: Number,
             required: true,
             set: (price) => parseFloat(price).toFixed(2),
@@ -21,6 +22,6 @@ const itemSchema = mongoose.Schema(
     {
         timestamps: true,
     }
-)
+);
 
-export const Item = mongoose.model('Item',itemSchema);
+export const Item = mongoose.model('Item', itemSchema);
