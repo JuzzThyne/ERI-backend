@@ -153,7 +153,8 @@ router.post('/add', upload.array('images', 5), verifyToken, async (req, res) => 
             res.status(400).json({ message: 'One or more items already exist!', success: false });
             return;
         }
-
+        console.log("New Items:", newItems);
+        
         await Item.create(newItems);
         res.status(201).json({ message: 'Items added successfully!', success: true });
     } catch (error) {
