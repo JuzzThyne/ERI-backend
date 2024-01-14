@@ -155,9 +155,7 @@ router.post('/add', upload.array('images', 5), verifyToken, async (req, res) => 
         }
         console.log("New Items:", newItems);
         
-        // await Item.create(newItems);
-        const testItem = { itemName: 'Test Item', itemPrice: 10.99 };
-        await Item.create([testItem]);
+        await Item.create(newItems);
         res.status(201).json({ message: 'Items added successfully!', success: true });
     } catch (error) {
         console.error(error);
