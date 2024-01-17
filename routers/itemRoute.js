@@ -116,7 +116,7 @@ router.post('/add', upload.array('images', 5), verifyToken, async (req, res) => 
         const uploadPromises = files.map(file => {
             return new Promise((resolve, reject) => {
                 // Upload image to Cloudinary with unique filename option
-                cloudinary.uploader.upload(file.path, { unique_filename: true }, (error, result) => {
+                cloudinary.uploader.upload(file.path, { folder: 'ERI', unique_filename: true }, (error, result) => {
                     if (error) {
                         if (error.http_code === 400 && error.message.includes('already exists')) {
                             // Handle the case where the same file is found
